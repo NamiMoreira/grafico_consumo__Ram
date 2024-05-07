@@ -1,0 +1,33 @@
+select
+   sum(round((total_user_mem/1024)/1024,3) ) mem_used_in_mb
+  
+from
+   
+   (select     
+      b.sid sid,
+      b.OSUSER,
+      b.MACHINE,
+      nvl(b.username,p.name) username,
+      sum(value) total_user_mem
+   from
+      sys.v_$statname c,
+      sys.v_$sesstat a,
+      sys.v_$session b,
+      sys.v_$bgprocess p
+   where
+      a.statistic#=c.statistic# and
+      p.paddr (+) = b.paddr and
+      b.sid=a.sid and
+      c.name in ('session pga memory','session uga memory')
+   group by
+      b.sid, nvl(b.username,p.name),  b.OSUSER,
+      b.MACHINE),
+   (select
+      sum(value) total_mem
+   from
+      sys.v_$statname c,
+      sys.v_$sesstat a
+      
+   where
+      a.statistic#=c.statistic# and
+      c.name in ('session pga memory','session uga memory'))
